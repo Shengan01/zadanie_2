@@ -59,7 +59,10 @@ jobs:
           image: ${{ vars.DOCKERHUB_USERNAME }}/zadanie_2:${{ steps.meta.outputs.version }}
           summary: true
           format: json
-
+      
+      - name: Save Dcoker Scout results
+        run: echo "${{ steps.scout.outputs.results }}" > scout-results.json
+      
       - name: Install jq
         run: sudo apt-get install -y jq
 
