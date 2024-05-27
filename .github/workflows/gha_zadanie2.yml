@@ -63,6 +63,9 @@ jobs:
       - name: Save Dcoker Scout results
         run: echo "${{ steps.scout.outputs.results }}" > scout-results.json
       
+      - name: Display scout-results.json content
+        run: cat scout-results.json
+        
       - name: Install jq
         run: sudo apt-get install -y jq
 
