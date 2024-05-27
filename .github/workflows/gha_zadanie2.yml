@@ -73,7 +73,6 @@ jobs:
           fi
 
       - name: Push Docker image to DockerHub
-        if: ${{ steps.check-scan.conclusion == 'success' }}
         uses: docker/build-push-action@v5
         with:
           context: .
