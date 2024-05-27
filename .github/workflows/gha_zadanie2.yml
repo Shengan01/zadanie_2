@@ -38,6 +38,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push Docker image
+        id: build
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -52,17 +53,23 @@ jobs:
 
       - name: Docker Scout vulnerability scan
         id: scout
-        run: |
-          docker pull ${{ steps.meta.outputs.tags }}
-          docker scout cves ${{ steps.meta.outputs.tags }}
+        uses: docker/scout-action@v1
+        with:
+          command: cves
+          image: ${{ vars.DOCKERHUB_USERNAME }}/zadanie_2:${{ steps.meta.outputs.version }}
+          summary: true
+          format: json
 
       - name: Check vulnerability scan results
         id: check-scan
         run: |
-          if [ "${{ steps.scout.outputs.vulnerability_count_critical }}" -ne 0 ] || [ "${{ steps.scout.outputs.vulnerability_count_high }}" -ne 0 ]; then
+          critical=$(jq '.critical' < scout-results.json)
+          high=$(jq '.high' < scout-results.json)
+          if [ "$critical" -ne 0 ] || [ "$high" -ne 0 ]; then
             echo "Image contains critical or high vulnerabilities. Skipping push to GHCR."
+            exit 1
           else
             echo "No critical or high vulnerabilities found. Pushing image to GHCR."
-            docker tag ${{ steps.meta.outputs.tags }} ghcr.io/${{ github.Shengan01 }}/zadanie_2:${{ github.sha }}
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.Shengan01 }} --password-stdin
+            docker tag ${{ steps.meta.outputs.tags }} ghcr.io/${{ github.Shengan01 }}zadanie_2:${{ github.sha }}
             docker push ghcr.io/${{ github.Shengan01 }}/zadanie_2:${{ github.sha }}
-          fi
