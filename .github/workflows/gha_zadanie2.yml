@@ -71,12 +71,15 @@ jobs:
         run: |
           critical=$(jq '.critical' < scout-results.json)
           high=$(jq '.high' < scout-results.json)
-          if [ "$critical" -ne 0 ] || [ "$high" -ne 0 ]; then
+          if [ -z "$critical" ] || [ -z "$high" ]; then
+            echo "Unable to parse vulnerability data. Skipping push to GHCR."
+            exit 1
+          elif [ "$critical" -ne 0 ] || [ "$high" -ne 0 ]; then
             echo "Image contains critical or high vulnerabilities. Skipping push to GHCR."
             exit 1
           else
             echo "No critical or high vulnerabilities found. Pushing image to GHCR."
-            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.Shengan01 }} --password-stdin
-            docker tag ${{ steps.meta.outputs.tags }} ghcr.io/${{ github.Shengan01 }}/zadanie_2:${{ github.sha }}
-            docker push ghcr.io/${{ github.Shengan01 }}/zadanie_2:${{ github.sha }}
+            echo "***" | docker login ghcr.io -u Shengan01 --password-stdin
+            docker tag shengan/zadanie_2:${{ github.sha}} ghcr.io/Shengan01/zadanie_2:${{ github.sha }}
+            docker push ghcr.io/Shengan01/zadanie_2:${{ github.sha }}
           fi
