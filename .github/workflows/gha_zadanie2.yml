@@ -1,10 +1,10 @@
-name: GHAction zadanie_2
+name: GHAction example
 
 on:
   workflow_dispatch:
   push:
     tags:
-      - 'v*'
+    - 'v*'
 
 jobs:
   ci_step:
@@ -51,22 +51,20 @@ jobs:
             type=registry,ref=${{ vars.DOCKERHUB_USERNAME }}/example:cache
           tags: ${{ steps.meta.outputs.tags }}
 
-      - name: Install Docker Scout
-        run: |
-          curl -L https://raw.githubusercontent.com/docker/scout-cli/main/install.sh | sh
-          sudo mv bin/docker-scout /usr/local/bin/
-
       - name: Docker Scout vulnerability scan
         id: scout
-        run: |
-          docker pull ${{ steps.meta.outputs.tags }}
-          docker-scout cves ${{ steps.meta.outputs.tags }} > scout-results.json
+        uses: docker/scout-action@v1
+        with:
+          command: cves
+          image: ${{ vars.DOCKERHUB_USERNAME }}/example:${{ steps.meta.outputs.version }}
+          summary: true
+          format: json
 
       - name: Check vulnerability scan results
         id: check-scan
         run: |
-          critical=$(jq '.critical' scout-results.json)
-          high=$(jq '.high' scout-results.json)
+          critical=$(jq '.critical' < scout-results.json)
+          high=$(jq '.high' < scout-results.json)
           if [ "$critical" -ne 0 ] || [ "$high" -ne 0 ]; then
             echo "Image contains critical or high vulnerabilities. Skipping push to GHCR."
             exit 1
@@ -75,4 +73,3 @@ jobs:
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.Shengan01 }} --password-stdin
             docker tag ${{ steps.meta.outputs.tags }} ghcr.io/${{ github.Shengan01 }}/zadanie_2:${{ github.sha }}
             docker push ghcr.io/${{ github.Shengan01 }}/zadanie_2:${{ github.sha }}
-          fi
