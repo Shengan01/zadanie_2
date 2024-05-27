@@ -79,3 +79,4 @@ jobs:
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.Shengan01 }} --password-stdin
             docker tag ${{ steps.meta.outputs.tags }} ghcr.io/${{ github.Shengan01 }}/zadanie_2:${{ github.sha }}
             docker push ghcr.io/${{ github.Shengan01 }}/zadanie_2:${{ github.sha }}
+          fi
