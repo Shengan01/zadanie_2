@@ -37,25 +37,22 @@ jobs:
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build Docker image
+      - name: Build and push Docker image
         id: build
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile
           platforms: linux/amd64,linux/arm64
-          push: false
+          push: true
           tags: ${{ steps.meta.outputs.tags }}
-
-      - name: Set environment variable for tags
-        run: echo "TAGS=${{ steps.meta.outputs.tags }}" >> $GITHUB_ENV
 
       - name: Docker Scout vulnerability scan
         id: scout
         uses: docker/scout-action@v1
         with:
           command: cves
-          image: ${{ env.TAGS }}
+          image: ${{ steps.meta.outputs.tags }}
           sarif-file: sarif.output.json
           summary: true
 
@@ -71,12 +68,3 @@ jobs:
           if [ "${{ steps.scout.outputs.vulnerability_count_critical }}" -ne 0 ] || [ "${{ steps.scout.outputs.vulnerability_count_high }}" -ne 0 ]; then
             exit 1
           fi
-
-      - name: Push Docker image to DockerHub
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
