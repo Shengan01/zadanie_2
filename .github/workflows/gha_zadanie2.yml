@@ -57,28 +57,31 @@ jobs:
         with:
           command: cves
           image: ${{ vars.DOCKERHUB_USERNAME }}/zadanie_2:${{ steps.meta.outputs.version }}
+          sarif-file: sarif-output.json
           summary: true
-          format: json
-        
-      - name: Save Docker Scout summary
-        run: echo "${{ steps.scout.outputs.summary }}" > scout-summary.json
-        
+          
       - name: Install jq
         run: sudo apt-get install -y jq
-        
-      - name: Check for vulnerabilities
-        id: check-vulnerabilities
+
+      - name: Parse SARIF file
+        id: parse-sarif
         run: |
-          critical=$(jq '.critical' < scout-summary.json)
-          high=$(jq '.high' < scout-summary.json)
+          # Assuming jq is installed in the environment
+          jq '.runs[].results' < sarif-output.json > scanning-results.json
+          
+      - name: Check vulnerability scan results
+        id: check-scan
+        run: |
+          critical=$(jq '.[] | select(.level == "error") | .message' < scanning-results.json | wc -l)
+          high=$(jq '.[] | select(.level == "warning") | .message' < scanning-results.json | wc -l)
           if [ "$critical" -ne 0 ] || [ "$high" -ne 0 ]; then
             echo "Image contains critical or high vulnerabilities. Skipping push to GHCR."
             exit 1
           else
             echo "No critical or high vulnerabilities found. Pushing image to GHCR."
-            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.Shengan01 }} --password-stdin
-            docker tag ${{ steps.meta.outputs.tags }} ghcr.io/${{ github.Shengan01 }}/zadanie_2:${{ github.sha }}
-            docker push ghcr.io/${{ github.Shengan01 }}/zadanie_2:${{ github.sha }}
+            echo ${{ secrets.GITHUB_TOKEN }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+            docker tag shengan/zadanie_2:${{ github.sha}} ghcr.io/Shengan01/zadanie_2:${{ github.sha }}
+            docker push ghcr.io/Shengan01/zadanie_2:${{ github.sha }}
           fi
         
           
