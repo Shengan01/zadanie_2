@@ -78,7 +78,7 @@ jobs:
             exit 1
           else
             echo "No critical or high vulnerabilities found. Pushing image to GHCR."
-            echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ vars.DOCKERHUB_USERNAME }} --password-stdin
+            docker login -u "${{ vars.DOCKERHUB_USERNAME }}" -p "${{ secrets.DOCKERHUB_PASSWORD }}"
             docker tag shengan/zadanie_2:${{ github.sha}} ghcr.io/Shengan01/zadanie_2:${{ github.sha }}
             docker push ghcr.io/Shengan01/zadanie_2:${{ github.sha }}
           fi
