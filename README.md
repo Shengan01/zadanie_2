@@ -1,6 +1,19 @@
 Plik workflow opisuje automatyczny proces budowania, tagowania i publikowania obrazu Docker na DockerHub oraz skanowania tego obrazu pod kątem podatności, a następnie weryfikacji wyników skanowania. Jeśli obraz nie zawiera krytycznych ani wysokich podatności, jest również publikowany w rejestrze GHCR
 
 ``` yaml
+- name: Docker Scout vulnerability scan
+  id: scout
+  uses: docker/scout-action@v1
+  with:
+    command: cves
+    image: ${{ vars.DOCKERHUB_USERNAME }}/zadanie_2:${{ steps.meta.outputs.version }}
+    sarif-file: sarif-output.json
+    summary: true
+```
+Skanuje obraz Docker w poszukiwaniu podatności i zapisuje wyniki w formacie SARIF w pliku sarif-output.json.
+
+
+``` yaml
 - name: Install jq
   run: sudo apt-get install -y jq
 ```
