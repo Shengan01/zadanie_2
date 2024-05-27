@@ -37,14 +37,14 @@ jobs:
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push Docker image
+      - name: Build Docker image
         id: build
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile
           platforms: linux/amd64,linux/arm64
-          push: true
+          push: false  # Zmieniamy na false, aby uniknąć przypadkowego wypchnięcia obrazu
           tags: ${{ steps.meta.outputs.tags }}
 
       - name: Docker Scout vulnerability scan
@@ -60,3 +60,13 @@ jobs:
           if [ "${{ steps.scout.outputs.vulnerability_count_critical }}" -ne 0 ] || [ "${{ steps.scout.outputs.vulnerability_count_high }}" -ne 0 ]; then
             exit 1
           fi
+
+      - name: Push Docker image to DockerHub
+        if: ${{ steps.check-scan.conclusion == 'success' }}  # Obraz zostanie wypchnięty tylko wtedy, gdy skanowanie zakończy się powodzeniem
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true 
+          tags: ${{ steps.meta.outputs.tags }}
