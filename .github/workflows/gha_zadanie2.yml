@@ -1,10 +1,10 @@
-name: GHAction zadanie_2
+name: zadanie_2
 
 on:
   workflow_dispatch:
   push:
     tags:
-    - 'v*'
+      - 'v*'
 
 jobs:
   ci_step:
@@ -60,6 +60,9 @@ jobs:
           summary: true
           format: json
 
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
       - name: Check vulnerability scan results
         id: check-scan
         run: |
@@ -71,5 +74,5 @@ jobs:
           else
             echo "No critical or high vulnerabilities found. Pushing image to GHCR."
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.Shengan01 }} --password-stdin
-            docker tag ${{ steps.meta.outputs.tags }} ghcr.io/${{ github.Shengan01 }}zadanie_2:${{ github.sha }}
+            docker tag ${{ steps.meta.outputs.tags }} ghcr.io/${{ github.Shengan01 }}/zadanie_2:${{ github.sha }}
             docker push ghcr.io/${{ github.Shengan01 }}/zadanie_2:${{ github.sha }}
