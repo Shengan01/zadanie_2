@@ -69,8 +69,11 @@ jobs:
       - name: Check vulnerability scan results
         id: check-scan
         run: |
+          cat scout-results.json  # Debug: Print out the contents of the JSON file
           critical=$(jq '.critical' < scout-results.json)
           high=$(jq '.high' < scout-results.json)
+          echo "Critical vulnerabilities: $critical"  # Debug: Print out the value of 'critical'
+          echo "High vulnerabilities: $high"  # Debug: Print out the value of 'high'
           if [ -z "$critical" ] || [ -z "$high" ]; then
             echo "Unable to parse vulnerability data. Skipping push to GHCR."
             exit 1
@@ -83,3 +86,4 @@ jobs:
             docker tag shengan/zadanie_2:${{ github.sha}} ghcr.io/Shengan01/zadanie_2:${{ github.sha }}
             docker push ghcr.io/Shengan01/zadanie_2:${{ github.sha }}
           fi
+      
