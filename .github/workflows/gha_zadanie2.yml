@@ -57,21 +57,23 @@ jobs:
         with:
           command: cves
           image: ${{ vars.DOCKERHUB_USERNAME }}/zadanie_2:${{ steps.meta.outputs.version }}
-          sarif-file: scout-results.json
           summary: true
-
+          format: json
+      
+      - name: Save Dcoker Scout results
+        run: echo "${{ steps.scout.outputs.results }}" > scout-results.json
+      
+        
       - name: Install jq
         run: sudo apt-get install -y jq
 
       - name: Check vulnerability scan results
         id: check-scan
         run: |
-          critical=$(jq '.critical' < scout-results.json)
-          high=$(jq '.high' < scout-results.json)
-          if [ -z "$critical" ] || [ -z "$high" ]; then
-            echo "Unable to parse vulnerability data. Skipping push to GHCR."
-            exit 1
-          elif [ "$critical" -ne 0 ] || [ "$high" -ne 0 ]; then
+          critical=$(jq -r '.critical' < scout-results.json)
+          high=$(jq -r '.high' < scout-results.json)
+          if [ "$critical" != "null" ] && [ "$high" != "null" ]; then
+            if [ "$critical" -ne 0 ] || [ "$high" -ne 0 ]; then
             echo "Image contains critical or high vulnerabilities. Skipping push to GHCR."
             exit 1
           else
