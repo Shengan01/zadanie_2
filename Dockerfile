@@ -1,27 +1,20 @@
-# Uzycie obrazu gcc jako etapu budowania
-FROM gcc AS builder
+# Używamy oficjalnego obrazu Node.js w wersji 14 jako bazowego obrazu
+FROM node:14
 
-# Ustawienie etykiety autora
-LABEL author = "Krystian Krukowski"
-
-# Ustawienie katalogu roboczego w kontenerze
+# Ustawiamy katalog roboczy w kontenerze
 WORKDIR /app
 
-# Skopiowanie plku server.c i binarnego pliku curl do kontenera
-COPY server.c .
-COPY curl .
+# Kopiujemy pliki z projektu do katalogu roboczego w kontenerze
+COPY package.json package-lock.json ./
 
-# Statyczna kompilacja pliku server.c i utworzenie jego binarnej wersji
-RUN gcc -static server.c -o server
+# Instalujemy zależności
+RUN npm install
 
-# Nowy etap z pustym obrazem scratch
-FROM scratch
+# Kopiujemy resztę plików do katalogu roboczego w kontenerze
+COPY . .
 
-# Skopiowanie binarnych plikow z etapu budowania
-COPY --from=builder /app/ /
+# Ustawiamy domyślny port, na którym będzie działać serwer
+EXPOSE 3000
 
-# Ustawienie Healthchecka
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 CMD /curl -fs http://localhost:8080 || exit 1
-
-# Uruchomienie serwera po uruchomieniu kontenera
-CMD ["/server"]
+# Uruchamiamy serwer
+CMD ["node", "server.js"]
