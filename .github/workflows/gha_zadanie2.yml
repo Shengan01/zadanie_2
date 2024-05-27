@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     tags:
-    - 'v*'
+      - 'v*'
 
 jobs:
   ci_step:
@@ -47,12 +47,16 @@ jobs:
           push: false 
           tags: ${{ steps.meta.outputs.tags }}
 
+      - name: Set output tags
+        id: debug-meta
+        run: echo "::set-output name=tags::${{ steps.meta.outputs.tags }}"
+
       - name: Docker Scout vulnerability scan
         id: scout
         uses: docker/scout-action@v1
         with:
           command: cves
-          image: ${{ vars.DOCKERHUB_USERNAME }}/zadanie_2:${{ steps.meta.outputs.tags }}
+          image: ${{ vars.DOCKERHUB_USERNAME }}/zadanie_2:${{ steps.debug-meta.outputs.tags }}
           sarif-file: sarif.output.json
           summary: true
 
