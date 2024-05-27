@@ -1,4 +1,4 @@
-name: GHAction example
+name: GHAction zadanie_2
 
 on:
   workflow_dispatch:
@@ -19,7 +19,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ vars.DOCKERHUB_USERNAME }}/example
+          images: ${{ vars.DOCKERHUB_USERNAME }}/zadanie_2
           flavor: latest=false
           tags: |
             type=sha,priority=100,prefix=sha-,format=short
@@ -38,7 +38,6 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push Docker image
-        id: build
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -46,30 +45,24 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           cache-from: |
-            type=registry,ref=${{ vars.DOCKERHUB_USERNAME }}/example:cache
+            type=registry,ref=${{ vars.DOCKERHUB_USERNAME }}/zadanie_2:cache
           cache-to: |
-            type=registry,ref=${{ vars.DOCKERHUB_USERNAME }}/example:cache
+            type=registry,ref=${{ vars.DOCKERHUB_USERNAME }}/zadanie_2:cache
           tags: ${{ steps.meta.outputs.tags }}
 
       - name: Docker Scout vulnerability scan
         id: scout
-        uses: docker/scout-action@v1
-        with:
-          command: cves
-          image: ${{ vars.DOCKERHUB_USERNAME }}/example:${{ steps.meta.outputs.version }}
-          summary: true
-          format: json
+        run: |
+          docker pull ${{ steps.meta.outputs.tags }}
+          docker scout cves ${{ steps.meta.outputs.tags }}
 
       - name: Check vulnerability scan results
         id: check-scan
         run: |
-          critical=$(jq '.critical' < scout-results.json)
-          high=$(jq '.high' < scout-results.json)
-          if [ "$critical" -ne 0 ] || [ "$high" -ne 0 ]; then
+          if [ "${{ steps.scout.outputs.vulnerability_count_critical }}" -ne 0 ] || [ "${{ steps.scout.outputs.vulnerability_count_high }}" -ne 0 ]; then
             echo "Image contains critical or high vulnerabilities. Skipping push to GHCR."
-            exit 1
           else
             echo "No critical or high vulnerabilities found. Pushing image to GHCR."
-            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.Shengan01 }} --password-stdin
             docker tag ${{ steps.meta.outputs.tags }} ghcr.io/${{ github.Shengan01 }}/zadanie_2:${{ github.sha }}
             docker push ghcr.io/${{ github.Shengan01 }}/zadanie_2:${{ github.sha }}
+          fi
