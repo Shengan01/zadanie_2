@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     tags:
-      - 'v*'
+    - 'v*'
 
 jobs:
   ci_step:
@@ -12,14 +12,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-
-      - name: Login to DockerHub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ vars.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-
       - name: Check out the source_repo
         uses: actions/checkout@v4
 
@@ -27,7 +19,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ vars.DOCKERHUB_USERNAME }}/zadanie_2
+          images: ${{ vars.DOCKERHUB_USERNAME }}/example
           flavor: latest=false
           tags: |
             type=sha,priority=100,prefix=sha-,format=short
@@ -39,27 +31,38 @@ jobs:
       - name: Buildx set-up
         uses: docker/setup-buildx-action@v3
 
-      - name: Docker Scout vulnerability scan
-        id: scout
-        uses: docker/scout-action@v1
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
         with:
-          command: cves
-          image: ${{ steps.meta.outputs.tags }}
-
-      - name: Check vulnerability scan results
-        id: check-scan
-        run: |
-          if [ "${{ steps.scout.outputs.vulnerability_count_critical }}" -ne 0 ] || [ "${{ steps.scout.outputs.vulnerability_count_high }}" -ne 0 ]; then
-            exit 1
-          fi
-
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push Docker image
-        id: build
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
+          cache-from: |
+            type=registry,ref=${{ vars.DOCKERHUB_USERNAME }}/example:cache
+          cache-to: |
+            type=registry,ref=${{ vars.DOCKERHUB_USERNAME }}/example:cache
           tags: ${{ steps.meta.outputs.tags }}
+
+      - name: Docker Scout vulnerability scan
+        id: scout
+        run: |
+          docker pull ${{ steps.meta.outputs.tags }}
+          docker scout cves ${{ steps.meta.outputs.tags }}
+
+      - name: Check vulnerability scan results
+        id: check-scan
+        run: |
+          if [ "${{ steps.scout.outputs.vulnerability_count_critical }}" -ne 0 ] || [ "${{ steps.scout.outputs.vulnerability_count_high }}" -ne 0 ]; then
+            echo "Image contains critical or high vulnerabilities. Skipping push to GHCR."
+          else
+            echo "No critical or high vulnerabilities found. Pushing image to GHCR."
+            docker tag ${{ steps.meta.outputs.tags }} ghcr.io/${{ github.Shengan01 }}/zadanie_2:${{ github.sha }}
+            docker push ghcr.io/${{ github.Shengan01 }}/zadanie_2:${{ github.sha }}
+          fi
