@@ -74,11 +74,15 @@ jobs:
           high=$(jq -r '.high' < scout-results.json)
           if [ "$critical" != "null" ] && [ "$high" != "null" ]; then
             if [ "$critical" -ne 0 ] || [ "$high" -ne 0 ]; then
-            echo "Image contains critical or high vulnerabilities. Skipping push to GHCR."
-            exit 1
+              echo "Image contains critical or high vulnerabilities. Skipping push to GHCR."
+              exit 1
+            else
+              echo "No critical or high vulnerabilities found. Pushing image to GHCR."
+              echo "***" | docker login ghcr.io -u Shengan01 --password-stdin
+              docker tag shengan/zadanie_2:${{ github.sha}} ghcr.io/Shengan01/zadanie_2:${{ github.sha }}
+              docker push ghcr.io/Shengan01/zadanie_2:${{ github.sha }}
+            fi
           else
-            echo "No critical or high vulnerabilities found. Pushing image to GHCR."
-            echo "***" | docker login ghcr.io -u Shengan01 --password-stdin
-            docker tag shengan/zadanie_2:${{ github.sha}} ghcr.io/Shengan01/zadanie_2:${{ github.sha }}
-            docker push ghcr.io/Shengan01/zadanie_2:${{ github.sha }}
+            echo "Unable to parse vulnerability data. Skipping push to GCR."
+            exit 1
           fi
