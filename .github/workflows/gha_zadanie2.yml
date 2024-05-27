@@ -47,16 +47,13 @@ jobs:
           push: false 
           tags: ${{ steps.meta.outputs.tags }}
 
-      - name: Set environment variable for tags
-        run: |
-          echo "TAGS=${{ steps.meta.outputs.tags }}" >> $GITHUB_ENV
 
       - name: Docker Scout vulnerability scan
         id: scout
         uses: docker/scout-action@v1
         with:
           command: cves
-          image: ${{ vars.DOCKERHUB_USERNAME }}/zadanie_2:${{ env.TAGS }}
+          image: ${{ vars.DOCKERHUB_USERNAME }}/zadanie_2:${{ steps.meta.outputs.tags }}
           sarif-file: sarif.output.json
           summary: true
 
@@ -82,5 +79,3 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true 
           tags: ${{ steps.meta.outputs.tags }}
-
-          
